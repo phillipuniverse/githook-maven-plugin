@@ -1,4 +1,14 @@
+target/
+.classpath
+.project
+.settings
+*.swp
+test-output
 .idea
-out
 *.iml
-target
+.metadata
+*.ipr
+bin/
+**/*maven-eclipse.xml
+**/*externalToolBuilders
+.sts4-cache
