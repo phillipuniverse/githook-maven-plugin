@@ -55,7 +55,7 @@ NOTE: The plugin rewrites hooks.
     <build>
         <plugins>
             <plugin>
-                <groupId>org.sandbox</groupId>
+                <groupId>io.github.phillipuniverse</groupId>
                 <artifactId>githook-maven-plugin</artifactId>
                 <version>1.0.0</version>
                 <executions>
