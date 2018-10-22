@@ -1,3 +1,6 @@
+[![build_status](https://travis-ci.org/phillipuniverse/githook-maven-plugin.svg?branch=master)](https://travis-ci.org/phillipuniverse/githook-maven-plugin)
+
+
 # githook-maven-plugin
 Maven plugin to configure and install local git hooks
 
