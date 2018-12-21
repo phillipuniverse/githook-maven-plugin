@@ -1,5 +1,8 @@
 package org.sandbox;
 
+import static java.nio.file.StandardOpenOption.CREATE;
+import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING;
+
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
@@ -7,14 +10,12 @@ import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 
+import java.io.File;
 import java.io.IOException;
-import java.nio.file.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Map;
-
-import static java.nio.file.StandardOpenOption.*;
-import java.nio.file.attribute.PosixFilePermission;
-import java.util.Arrays;
-import java.util.HashSet;
 
 @Mojo(name = "install", defaultPhase = LifecyclePhase.INITIALIZE)
 public final class GitHookInstallMojo extends AbstractMojo {
@@ -34,8 +35,11 @@ public final class GitHookInstallMojo extends AbstractMojo {
             String hookName = hook.getKey();
             String finalScript = SHEBANG + '\n' + hook.getValue();
             try {
-                Files.write(HOOK_DIR_PATH.resolve(hookName), finalScript.getBytes(), CREATE, TRUNCATE_EXISTING);
-                Files.setPosixFilePermissions(HOOK_DIR_PATH.resolve(hookName), new HashSet<>(Arrays.asList(PosixFilePermission.OWNER_EXECUTE, PosixFilePermission.OWNER_READ, PosixFilePermission.OWNER_WRITE)));
+                File created = Files.write(HOOK_DIR_PATH.resolve(hookName), finalScript.getBytes(),
+                        CREATE, TRUNCATE_EXISTING).toFile();
+                created.setExecutable(true, true);
+                created.setReadable(true, true);
+                created.setWritable(true, true);
             } catch (IOException e) {
                 throw new MojoExecutionException("could not write hook with name: " + hookName, e);
             }
