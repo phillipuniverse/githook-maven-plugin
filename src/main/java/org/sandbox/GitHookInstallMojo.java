@@ -28,8 +28,9 @@ public final class GitHookInstallMojo extends AbstractMojo {
 
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
-        if (!Files.exists(HOOK_DIR_PATH)) {
-            throw new MojoExecutionException("not a git repository");
+        if (!HOOK_DIR_PATH.toFile().exists()) {
+            throw new MojoExecutionException(
+                    "Not a git repository, could not find .git/hooks directory");
         }
         for (Map.Entry<String, String> hook : hooks.entrySet()) {
             String hookName = hook.getKey();
@@ -37,11 +38,16 @@ public final class GitHookInstallMojo extends AbstractMojo {
             try {
                 File created = Files.write(HOOK_DIR_PATH.resolve(hookName), finalScript.getBytes(),
                         CREATE, TRUNCATE_EXISTING).toFile();
-                created.setExecutable(true, true);
-                created.setReadable(true, true);
-                created.setWritable(true, true);
+                boolean successul = created.setExecutable(true, true)
+                        && created.setReadable(true, true)
+                        && created.setWritable(true, true);
+                if (!successul) {
+                    throw new IllegalStateException(
+                            String.format("Could not set permissions on created file %s",
+                                    created.getAbsolutePath()));
+                }
             } catch (IOException e) {
-                throw new MojoExecutionException("could not write hook with name: " + hookName, e);
+                throw new MojoExecutionException("Could not write hook with name: " + hookName, e);
             }
         }
     }
