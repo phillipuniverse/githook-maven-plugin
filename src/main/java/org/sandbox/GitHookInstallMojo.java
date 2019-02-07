@@ -17,7 +17,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
 
-@Mojo(name = "install", defaultPhase = LifecyclePhase.INITIALIZE)
+@Mojo(name = "install", defaultPhase = LifecyclePhase.INITIALIZE, threadSafe = true)
 public final class GitHookInstallMojo extends AbstractMojo {
 
     private static final String SHEBANG = "#!/bin/sh";
@@ -43,19 +43,22 @@ public final class GitHookInstallMojo extends AbstractMojo {
             String hookName = hook.getKey();
             String finalScript = SHEBANG + '\n' + hook.getValue();
             try {
-                File created = Files.write(hooksDir.resolve(hookName), finalScript.getBytes(),
-                        CREATE, TRUNCATE_EXISTING).toFile();
-                boolean successul = created.setExecutable(true, true)
-                        && created.setReadable(true, true)
-                        && created.setWritable(true, true);
-                if (!successul) {
-                    throw new IllegalStateException(
-                            String.format("Could not set permissions on created file %s",
-                                    created.getAbsolutePath()));
-                }
+                writeFile(hooksDir.resolve(hookName), finalScript.getBytes());
             } catch (IOException e) {
                 throw new MojoExecutionException("Could not write hook with name: " + hookName, e);
             }
+        }
+    }
+
+    protected synchronized void writeFile(Path path, byte[] bytes) throws IOException {
+        File created = Files.write(path, bytes, CREATE, TRUNCATE_EXISTING).toFile();
+        boolean success = created.setExecutable(true, true)
+                && created.setReadable(true, true)
+                && created.setWritable(true, true);
+        if (!success) {
+            throw new IllegalStateException(
+                    String.format("Could not set permissions on created file %s",
+                            created.getAbsolutePath()));
         }
     }
 
