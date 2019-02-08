@@ -25,24 +25,26 @@ public final class GitHookInstallMojo extends AbstractMojo {
     @Parameter
     private Map<String, String> hooks;
 
+    @Parameter(defaultValue = "${project.build.directory}", required = true)
+    private String buildDirectory;
+
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
-        Path hooksDir;
-        try {
-            hooksDir = getHooksDir();
-        } catch (IOException e) {
-            throw new MojoExecutionException("Exception searching for .git/hooks", e);
-        }
+        Path hooksDir = getHooksDir(buildDirectory);
 
         if (hooksDir == null) {
             throw new MojoExecutionException(
-                    "Not a git repository, could not find .git/hooks directory");
+                    String.format(
+                            "Not a git repository, could not find a .git/hooks directory anywhere in the hierarchy of %s",
+                            buildDirectory));
         }
 
         for (Map.Entry<String, String> hook : hooks.entrySet()) {
             String hookName = hook.getKey();
             String finalScript = SHEBANG + '\n' + hook.getValue();
             try {
+                getLog().debug(String.format("Installing %s hook into %s", hookName,
+                        hooksDir.toAbsolutePath().toString()));
                 writeFile(hooksDir.resolve(hookName), finalScript.getBytes());
             } catch (IOException e) {
                 throw new MojoExecutionException("Could not write hook with name: " + hookName, e);
@@ -62,11 +64,11 @@ public final class GitHookInstallMojo extends AbstractMojo {
         }
     }
 
-    private Path getHooksDir() throws IOException {
+    private Path getHooksDir(String base) {
+        getLog().debug(String.format("Searching for .git directory starting at %s", base));
         File gitMetadataDir = new FileRepositoryBuilder()
-                .findGitDir()
-                .build()
-                .getDirectory();
+                .findGitDir(new File(base))
+                .getGitDir();
 
         return gitMetadataDir == null ? null : gitMetadataDir.toPath().resolve("hooks");
     }
