@@ -13,14 +13,38 @@ import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
 @Mojo(name = "install", defaultPhase = LifecyclePhase.INITIALIZE, threadSafe = true)
 public final class GitHookInstallMojo extends AbstractMojo {
 
-    private static final String SHEBANG = "#!/bin/sh";
+    private static final String NEW_LINE = System.lineSeparator();
+    private static final String SHEBANG = "#!/bin/sh" + NEW_LINE;
+    private static final List<String> validHooks = Arrays.asList(
+        "applypatch-msg",
+        "pre-applypatch",
+        "post-applypatch",
+        "pre-commit",
+        "prepare-commit-msg",
+        "commit-msg",
+        "post-commit",
+        "pre-rebase",
+        "post-checkout",
+        "post-merge",
+        "pre-receive",
+        "update",
+        "post-receive",
+        "post-update",
+        "pre-auto-gc",
+        "post-rewrite",
+        "pre-push"
+    );
 
     @Parameter
     private Map<String, String> hooks;
@@ -41,18 +65,23 @@ public final class GitHookInstallMojo extends AbstractMojo {
 
         for (Map.Entry<String, String> hook : hooks.entrySet()) {
             String hookName = hook.getKey();
-            String finalScript = SHEBANG + '\n' + hook.getValue();
+            if (!validHooks.contains(hookName)) {
+                getLog().error( String.format("`%s` hook is not a valid git-hook name", hookName) );
+                continue;
+            }
+
+            String hookScript = hook.getValue();
+            String finalScript = (hookScript.startsWith("#!") ? "" : SHEBANG) + hookScript + NEW_LINE;
             try {
-                getLog().debug(String.format("Installing %s hook into %s", hookName,
-                        hooksDir.toAbsolutePath().toString()));
-                writeFile(hooksDir.resolve(hookName), finalScript.getBytes());
+                getLog().info( String.format("Installing %s hook into %s", hookName, hooksDir.toAbsolutePath().toString()) );
+                writeFile(hooksDir.resolve(hookName), finalScript.getBytes(Charset.forName("UTF-8")));
             } catch (IOException e) {
                 throw new MojoExecutionException("Could not write hook with name: " + hookName, e);
             }
         }
     }
 
-    protected synchronized void writeFile(Path path, byte[] bytes) throws IOException {
+    private synchronized void writeFile(Path path, byte[] bytes) throws IOException {
         File created = Files.write(path, bytes, CREATE, TRUNCATE_EXISTING).toFile();
         boolean success = created.setExecutable(true, true)
                 && created.setReadable(true, true)
