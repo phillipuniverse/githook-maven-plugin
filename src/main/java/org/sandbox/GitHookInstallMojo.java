@@ -13,10 +13,9 @@ import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -54,7 +53,7 @@ public final class GitHookInstallMojo extends AbstractMojo {
 
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
-        Path hooksDir = getHooksDir(buildDirectory);
+        Path hooksDir = getOrCreateHooksDirectory(buildDirectory);
 
         if (hooksDir == null) {
             throw new MojoExecutionException(
@@ -74,7 +73,7 @@ public final class GitHookInstallMojo extends AbstractMojo {
             String finalScript = (hookScript.startsWith("#!") ? "" : SHEBANG) + hookScript + NEW_LINE;
             try {
                 getLog().info( String.format("Installing %s hook into %s", hookName, hooksDir.toAbsolutePath().toString()) );
-                writeFile(hooksDir.resolve(hookName), finalScript.getBytes(Charset.forName("UTF-8")));
+                writeFile(hooksDir.resolve(hookName), finalScript.getBytes(StandardCharsets.UTF_8));
             } catch (IOException e) {
                 throw new MojoExecutionException("Could not write hook with name: " + hookName, e);
             }
@@ -93,13 +92,29 @@ public final class GitHookInstallMojo extends AbstractMojo {
         }
     }
 
-    private Path getHooksDir(String base) {
+    private Path getOrCreateHooksDirectory(String base) {
         getLog().debug(String.format("Searching for .git directory starting at %s", base));
         File gitMetadataDir = new FileRepositoryBuilder()
                 .findGitDir(new File(base))
                 .getGitDir();
 
-        return gitMetadataDir == null ? null : gitMetadataDir.toPath().resolve("hooks");
+        if (gitMetadataDir == null) {
+            return null;
+        }
+
+        Path hooksDir = gitMetadataDir.toPath().resolve("hooks");
+        if (!hooksDir.toFile().exists()) {
+            getLog().info(String.format("Creating missing hooks directory at %s",
+                    hooksDir.toAbsolutePath().toString()));
+            try {
+                Files.createDirectories(hooksDir);
+            } catch (IOException e) {
+                getLog().error(e);
+                return null;
+            }
+        }
+
+        return hooksDir;
     }
 
 }
