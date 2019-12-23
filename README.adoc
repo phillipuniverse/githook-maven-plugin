@@ -5,35 +5,16 @@ ifdef::env-github[]
 :caution-caption: :fire:
 :warning-caption: :warning:
 endif::[]
-
-
-image:https://travis-ci.org/phillipuniverse/githook-maven-plugin.svg?branch=master[link=https://travis-ci.org/phillipuniverse/githook-maven-plugin] image:https://maven-badges.herokuapp.com/maven-central/io.github.phillipuniverse/githook-maven-plugin/badge.svg?style=default[link=https://search.maven.org/artifact/io.github.phillipuniverse/githook-maven-plugin/1.0.0/maven-plugin]
-
-= githook-maven-plugin
 :toc:
 
-Maven plugin to configure and install local git hooks
+image:https://travis-ci.org/phillipuniverse/githook-maven-plugin.svg?branch=master[link=https://travis-ci.org/phillipuniverse/githook-maven-plugin] image:https://maven-badges.herokuapp.com/maven-central/io.github.phillipuniverse/githook-maven-plugin/badge.svg?style=default[link=https://search.maven.org/artifact/io.github.phillipuniverse/githook-maven-plugin/1.0.4/maven-plugin]
 
-== Protect your VCS
-It's always a good idea to check your changes before committing them: run unit tests, perform the build, etc. However, such check-lists may be easily overlooked, especially in big projects. To get rid of the human factor, they should be somehow forced and automated. The best way is to implement such verification on the project infrastructure level. However, sometimes there's no infrastructure or it doesn't allow to implement that. For the latter there are https://git-scm.com/book/en/v2/Customizing-Git-Git-Hooks[git client hooks].
+= githook-maven-plugin
 
-== Listen to your VCS
-Besides pre-commit and pre-push hooks there are some others which allow to handle local VCS events.
-
-== Drawbacks of local git hooks
-The main disadvantage of this approach is that hooks are kept within .git directory, which shall never come to the remote repository. Thus, each contributor will have to install them manually in his local repository, which may, again, be overlooked.
-
-== So why should I use this plugin?
-Because it deals with the problem of providing hook configuration to the repository, and automates their installation.
-
-== Implementation
-The idea is to keep somewhere a mapping between the hook name and the script, for each hook name create a respective file in .git/hooks, containing that script when the project initializes. "Initializes" -- is quite a polymorphic term, but when it's a maven project, then it likely means initial https://maven.apache.org/guides/introduction/introduction-to-the-lifecycle.html[lifecycle phase]. In the majority of cases, it will be enough to map the plugin on "initialize" phase, but you can still https://maven.apache.org/guides/mini/guide-configuring-plugins.html#Using_the_executions_Tag[create any other custom execution].
-
-== Flaws
-Obviously, nothing can restrain one from the cloning of repository, and interacting with it without initial build. Also, it's always possible to delete hook files manually.
+Maven plugin to configure and install local git hooks. It's always a good idea to check your changes before committing them: run unit tests, perform the build, etc. However, such check-lists may be easily overlooked, especially in big projects. To get rid of the human factor, they should be somehow forced and automated. The best way is to implement such verification on the project infrastructure level. However, sometimes there's no infrastructure or it doesn't allow to implement that. For the latter there are https://git-scm.com/book/en/v2/Customizing-Git-Git-Hooks[git client hooks].
 
 == Usage
-The plugin provides the only goal "install". It's mapped on "initialize" phase by default. To use the default flow add these lines to the plugin definition:
+The plugin provides a single goal: `install`. By default this is mapped to the `initialize` phase of the https://maven.apache.org/guides/introduction/introduction-to-the-lifecycle.html#Lifecycle_Reference[Maven Lifecycle]:
 
 [source,xml]
 ----
@@ -46,19 +27,23 @@ The plugin provides the only goal "install". It's mapped on "initialize" phase b
 </executions>
 ----
 
-To configure hooks provide the following configuration for the execution:
+To configure hooks provide the following configuration for the execution where `hook-name` corresponds to a https://git-scm.com/book/en/v2/Customizing-Git-Git-Hooks#_client_side_hooks[valid Git client hook]:
 
 [source,xml]
 ----
-<hooks>
-  <hook-name>script</hook-name>
-  ...
-</hooks>
+<configuration>
+  <hooks>
+    <pre-commit>script</pre-commit>
+    ...
+  </hooks>
+</configuration>
 ----
 
 WARNING: The plugin rewrites existing hooks with the same name
 
 === Example
+
+The following adds a pre-commit hook that executes a `mvn clean install` before every commit.
 
 [source,xml]
 ----
@@ -75,7 +60,7 @@ WARNING: The plugin rewrites existing hooks with the same name
             <plugin>
                 <groupId>io.github.phillipuniverse</groupId>
                 <artifactId>githook-maven-plugin</artifactId>
-                <version>1.0.0</version>
+                <version>1.0.4</version>
                 <executions>
                     <execution>
                         <goals>
@@ -97,9 +82,20 @@ WARNING: The plugin rewrites existing hooks with the same name
 </project>
 ----
 
-=== Snapshots
+== Why should I use this plugin?
+Because it deals with the problem of providing hook configuration to the repository, and automates their installation.
 
-Updates to the `master` branch are autodeployed to the Maven central snapshots repository. To get the latest non-released version, add a `pluginRepository` to your `pom.xml`:
+== Implementation
+The idea is to keep somewhere a mapping between the hook name and the script, for each hook name create a respective file in .git/hooks, containing that script when the project initializes. "Initializes" -- is quite a polymorphic term, but when it's a maven project, then it likely means initial https://maven.apache.org/guides/introduction/introduction-to-the-lifecycle.html[lifecycle phase]. In the majority of cases, it will be enough to map the plugin on "initialize" phase, but you can still https://maven.apache.org/guides/mini/guide-configuring-plugins.html#Using_the_executions_Tag[create any other custom execution].
+
+== Caveats
+
+. Users can still clone the repository and interact with it _without_ performing any Maven commands and thus any hooks will be ignored
+. Users can delete the `.git/hooks` files manually, or still commit with `git commit --no-verify` to skip all hook executions
+
+== Targeting the Latest `SNAPSHOT`
+
+Updates to the `master` branch are autodeployed to the Maven central snapshots repository. To get the latest unreleased version, add a `pluginRepository` to your `pom.xml`:
 
 [source,xml]
 ----
