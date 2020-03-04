@@ -87,7 +87,7 @@ public final class GitHookInstallMojo extends AbstractMojo {
 
         if (!skipRepositoryCheck && hooksDir == null) {
             throw new MojoExecutionException(String.format(
-                    "Not a git repository, could not find a .git/hooks directory anywhere in the hierarchy of %s",
+                    "Not a git repository, could not find a .git/hooks directory anywhere in the hierarchy of %s. Turn off this behavior with skipRepositoryCheck=false",
                     buildDirectory));
         } else if (hooksDir == null) {
             getLog().info("No .git directory found, skipping plugin execution");
