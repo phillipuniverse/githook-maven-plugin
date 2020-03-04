@@ -81,6 +81,22 @@ To configure hooks provide the following configuration for the execution where `
 
 WARNING: The plugin rewrites existing hooks with the same name
 
+=== Additional Configuration Options
+
+|===
+|Configuration Property |User Property |Description |Default Value
+
+|`skip`
+|`githook.plugin.skip`
+|Skips execution of the plugin altogether
+|`false`
+
+|`skipRepositoryCheck`
+|`githook.plugin.skipRepositoryCheck`
+|Whether or not the plugin should fail if the project being built is not in a Git repository
+|`false`
+|===
+
 == Why should I use this plugin?
 Because it deals with the problem of providing hook configuration to the repository, and automates their installation.
 
